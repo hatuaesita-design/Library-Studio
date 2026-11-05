@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library Studio | Reading Desk</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="{{ url_for('index') }}">
+            <span class="brand-mark">L</span>
+            <span><strong>Library</strong><small>STUDIO</small></span>
+        </a>
+        <div class="nav-caption">WORKSPACE</div>
+        <a class="nav-link active" href="{{ url_for('index') }}"><span class="nav-icon">▦</span> Overview</a>
+        <a class="nav-link" href="#books"><span class="nav-icon">▤</span> Book catalogue</a>
+        <a class="nav-link" href="#students"><span class="nav-icon">♙</span> Members</a>
+        <a class="nav-link" href="#circulation"><span class="nav-icon">⇄</span> Circulation</a>
+        <div class="sidebar-note">
+            <span class="note-icon">✦</span>
+            <strong>A little reading goes a long way.</strong>
+            <p>Keep your collection organized, one book at a time.</p>
+        </div>
+        <div class="sidebar-foot"><span class="status-dot"></span> Library system ready</div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div class="breadcrumb">Workspace <span>/</span> Overview</div>
+            <div class="topbar-right"><span class="live-dot"></span> Local library <span class="avatar">LB</span></div>
+        </header>
+
+        <section class="welcome">
+            <div>
+                <p class="eyebrow">YOUR READING DESK</p>
+                <h1>Good things happen<br><em>between the covers.</em></h1>
+                <p class="welcome-copy">A clear view of your books, members, and lending activity.</p>
+            </div>
+            <div class="welcome-art" aria-hidden="true">
+                <div class="sun"></div><div class="book book-back"></div>
+                <div class="book book-mid"></div><div class="book book-front"></div>
+                <div class="plant">✳</div>
+            </div>
+        </section>
+
+        {% if message %}
+        <div class="message" role="alert" aria-live="assertive"><span class="message-check">✓</span>{{ message }}</div>
+        {% endif %}
+
+        <section class="metrics" aria-label="Library statistics">
+            <article class="metric metric-total"><div class="metric-top"><span>Total collection</span><span class="metric-icon">▤</span></div><div class="metric-value">{{ total_books }}</div><div class="metric-foot">Books in your catalogue</div></article>
+            <article class="metric"><div class="metric-top"><span>Available now</span><span class="metric-icon green">✓</span></div><div class="metric-value">{{ available }}</div><div class="metric-foot"><span class="tiny-dot green-dot"></span> Ready to be borrowed</div></article>
+            <article class="metric"><div class="metric-top"><span>Currently issued</span><span class="metric-icon orange">↗</span></div><div class="metric-value">{{ issued }}</div><div class="metric-foot"><span class="tiny-dot orange-dot"></span> Out with readers</div></article>
+            <article class="metric"><div class="metric-top"><span>Members</span><span class="metric-icon purple">♙</span></div><div class="metric-value">{{ students|length }}</div><div class="metric-foot">Registered students</div></article>
+        </section>
+
+        <section class="charts-grid" aria-label="Library analytics">
+            <article class="chart-panel" aria-label="Book availability graph">
+                <div class="data-heading"><div><p class="eyebrow">COLLECTION</p><h2>Book circulation</h2></div><span class="count-pill">Live totals</span></div>
+                <div class="chart-container"><canvas id="bookChart" data-available="{{ chart_available }}" data-issued="{{ chart_issued }}" role="img" aria-label="Bar chart comparing available and issued books"></canvas></div>
+            </article>
+            <article class="chart-panel" aria-label="Library members graph">
+                <div class="data-heading"><div><p class="eyebrow">COMMUNITY</p><h2>Registered members</h2></div><span class="count-pill" id="memberCountPill">{{ students|length }} members</span></div>
+                <div class="chart-container"><canvas id="memberChart" data-members="{{ students|length }}" role="img" aria-label="Bar chart showing the number of registered members"></canvas></div>
+                <p class="chart-footnote">Updates automatically when a member is added or removed.</p>
+            </article>
+        </section>
+
+        <section class="section-heading">
+            <div><p class="eyebrow">QUICK ACTIONS</p><h2>Manage your library</h2></div>
+            <p class="section-hint">Choose an action to keep everything up to date.</p>
+        </section>
+
+        <section class="action-grid">
+            <article class="action-card" id="add-book">
+                <div class="action-title"><span class="action-icon book-icon">＋</span><div><h3>Add a book</h3><p>Grow your collection</p></div></div>
+                <form action="{{ url_for('add_book') }}" method="POST" class="stack-form" novalidate>
+                    <label for="book_id">Book ID</label><input id="book_id" type="text" name="book_id" placeholder="e.g. 104" maxlength="30" data-rule="book-id" required><small class="field-error" aria-live="polite"></small>
+                    <label for="title">Book title</label><input id="title" type="text" name="title" placeholder="Letters only, e.g. The Great Gatsby" maxlength="150" data-rule="title" required><small class="field-error" aria-live="polite"></small>
+                    <label for="author">Author</label><input id="author" type="text" name="author" placeholder="Letters only, e.g. Jane Austen" maxlength="80" data-rule="person" required><small class="field-error" aria-live="polite"></small>
+                    <button type="submit" class="primary-button">Add to catalogue <span>→</span></button>
+                </form>
+            </article>
+
+            <article class="action-card" id="add-student">
+                <div class="action-title"><span class="action-icon member-icon">♙</span><div><h3>Register a member</h3><p>Add a student to the library</p></div></div>
+                <form action="{{ url_for('add_student') }}" method="POST" class="stack-form" novalidate>
+                    <label for="student_id">Student ID</label><input id="student_id" type="text" name="student_id" placeholder="e.g. ST021" maxlength="30" data-rule="student-id" required><small class="field-error" aria-live="polite"></small>
+                    <label for="student_name">Full name</label><input id="student_name" type="text" name="name" placeholder="Name without numbers" maxlength="80" data-rule="person" required><small class="field-error" aria-live="polite"></small>
+                    <div class="form-spacer"></div>
+                    <button type="submit" class="secondary-button">Register member <span>→</span></button>
+                </form>
+            </article>
+
+            <article class="action-card circulation-card" id="circulation">
+                <div class="action-title"><span class="action-icon issue-icon">⇄</span><div><h3>Issue a book</h3><p>Assign a book to a student</p></div></div>
+                <form action="{{ url_for('issue_book') }}" method="POST" class="stack-form" novalidate>
+                    <label for="issue_book_id">Book ID</label><input id="issue_book_id" type="text" name="book_id" placeholder="Numbers only" maxlength="30" data-rule="book-id" required><small class="field-error" aria-live="polite"></small>
+                    <label for="issue_student_id">Student ID</label><input id="issue_student_id" type="text" name="student_id" placeholder="Letters and numbers only" maxlength="30" data-rule="student-id" required><small class="field-error" aria-live="polite"></small>
+                    <div class="form-spacer"></div>
+                    <button type="submit" class="primary-button">Confirm issue <span>→</span></button>
+                </form>
+            </article>
+
+            <article class="action-card return-card">
+                <div class="action-title"><span class="action-icon return-icon">↩</span><div><h3>Return a book</h3><p>Check in a borrowed book</p></div></div>
+                <form action="{{ url_for('return_book') }}" method="POST" class="stack-form" novalidate>
+                    <label for="return_book_id">Book ID</label><input id="return_book_id" type="text" name="book_id" placeholder="Numbers only" maxlength="30" data-rule="book-id" required><small class="field-error" aria-live="polite"></small>
+                    <label for="days">Days borrowed</label><input id="days" type="number" min="0" max="36500" step="1" name="days" placeholder="e.g. 16" data-rule="days" required><small class="field-error" aria-live="polite"></small>
+                    <p class="fee-note">Late fee: <strong>₹5/day</strong> after 14 days.</p>
+                    <button type="submit" class="secondary-button">Process return <span>→</span></button>
+                </form>
+            </article>
+        </section>
+
+        <section class="data-section" id="books">
+            <div class="data-heading"><div><p class="eyebrow">YOUR COLLECTION</p><h2>Book catalogue</h2></div><span class="count-pill">{{ total_books }} books</span></div>
+            <div class="table-wrap"><table>
+                <thead><tr><th>Book details</th><th>Book ID</th><th>Author</th><th>Status</th><th>Issued</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for book in books %}
+                <tr>
+                    <td><div class="book-cell"><span class="mini-book">▤</span><strong>{{ book.title }}</strong></div></td>
+                    <td><span class="id-label">{{ book.book_id }}</span></td>
+                    <td>{{ book.author }}</td>
+                    <td>{% if book.available %}<span class="status available">Available</span>{% else %}<span class="status issued">Issued</span>{% endif %}</td>
+                    <td>{{ book.issued_count }}</td>
+                    <td><form class="delete-form" action="{{ url_for('delete_book', book_id=book.book_id) }}" method="POST"><button type="submit" class="delete-button">Delete book</button></form></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="empty-state"><span>▤</span><strong>Your catalogue is waiting</strong><small>Add your first book using the form above.</small></td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </section>
+
+        <section class="data-section" id="students">
+            <div class="data-heading"><div><p class="eyebrow">YOUR COMMUNITY</p><h2>Student members</h2></div><span class="count-pill">{{ students|length }} members</span></div>
+            <div class="table-wrap"><table>
+                <thead><tr><th>Student</th><th>Student ID</th><th>Membership</th><th>Action</th></tr></thead>
+                <tbody>
+                {% for student in students %}
+                <tr>
+                    <td><div class="student-cell"><span class="student-avatar">{{ student.name[:1]|upper }}</span><strong>{{ student.name }}</strong></div></td>
+                    <td><span class="id-label">{{ student.student_id }}</span></td>
+                    <td><span class="status member-status">Registered</span></td>
+                    <td><form class="delete-form" action="{{ url_for('delete_student', student_id=student.student_id) }}" method="POST" onsubmit="return confirm('Remove this member? You cannot remove a member while a book is currently issued to them.');"><button type="submit" class="delete-button">Remove member</button></form></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="4" class="empty-state"><span>♙</span><strong>No members yet</strong><small>Register a student to get started.</small></td></tr>
+                {% endfor %}
+                </tbody>
+            </table></div>
+        </section>
+
+        <footer><span class="footer-mark">L</span><span><strong>Library Studio</strong><small>Made for curious minds.</small></span><span class="footer-right">A little more knowledge, every day.</span></footer>
+    </main>
+</div>
+<script>
+(() => {
+  const rules = {
+    'book-id': v => !v.trim() ? 'Book ID is required.' : !/^[0-9]+$/.test(v.trim()) ? 'Book ID must contain numbers only.' : v.trim().length > 30 ? 'Use 30 digits or fewer.' : '',
+    'student-id': v => !v.trim() ? 'Student ID is required.' : !/^[A-Za-z0-9]+$/.test(v.trim()) ? 'Student ID must contain letters and numbers only (no spaces or symbols).' : v.trim().length > 30 ? 'Use 30 characters or fewer.' : '',
+    title: v => !v.trim() ? 'Book name is required.' : v.trim().length > 150 ? 'Use 150 characters or fewer.' : !/^[\p{L}][\p{L}\s.'’,-]*$/u.test(v.trim()) ? 'Book name must contain letters only; numbers are not allowed.' : '',
+    person: v => !v.trim() ? 'This field is required.' : v.trim().length > 80 ? 'Use 80 characters or fewer.' : !/^[\p{L}][\p{L}\s.'’-]*$/u.test(v.trim()) ? 'Use letters only. Numbers are not allowed.' : '',
+    days: v => v.trim() === '' ? 'Days borrowed is required.' : !/^\d+$/.test(v) ? 'Enter a whole number (0 or greater).' : Number(v) > 36500 ? 'Maximum allowed is 36,500 days.' : ''
+  };
+  function validate(input) {
+    const error = rules[input.dataset.rule]?.(input.value) || '';
+    const hint = input.nextElementSibling;
+    input.classList.toggle('input-invalid', !!error);
+    input.classList.toggle('input-valid', !error && input.value.trim() !== '');
+    input.setAttribute('aria-invalid', error ? 'true' : 'false');
+    if (hint && hint.classList.contains('field-error')) hint.textContent = error;
+    return !error;
+  }
+  function setupSequentialForms() {
+    document.querySelectorAll('form.stack-form').forEach(form => {
+      const inputs = [...form.querySelectorAll('input[data-rule]')];
+      inputs.forEach((input, index) => {
+        input.disabled = index > 0 && !inputs.slice(0, index).every(previous => !(rules[previous.dataset.rule]?.(previous.value) || ''));
+      });
+    });
+  }
+  function updateSequentialFields(input) {
+    const form = input.closest('form.stack-form');
+    if (!form) return;
+    const inputs = [...form.querySelectorAll('input[data-rule]')];
+    const index = inputs.indexOf(input);
+    inputs.forEach((field, fieldIndex) => {
+      if (fieldIndex > 0) field.disabled = !inputs.slice(0, fieldIndex).every(previous => validate(previous));
+    });
+  }
+  function attachValidationHandlers() {
+    document.querySelectorAll('input[data-rule]').forEach(input => {
+      if (input.dataset.validationAttached === 'true') return;
+      input.dataset.validationAttached = 'true';
+      input.addEventListener('input', () => { validate(input); updateSequentialFields(input); });
+      input.addEventListener('blur', () => { validate(input); updateSequentialFields(input); });
+      input.addEventListener('keydown', event => {
+        const form = input.closest('form.stack-form');
+        const inputs = form ? [...form.querySelectorAll('input[data-rule]')] : [];
+        const index = inputs.indexOf(input);
+        if (index > 0 && !inputs.slice(0, index).every(previous => validate(previous))) {
+          event.preventDefault();
+          inputs.find(previous => !validate(previous))?.focus();
+        }
+      });
+    });
+    setupSequentialForms();
+  }
+  const messageBox = document.querySelector('.message');
+  function showMessage(message, success) {
+    let box = document.querySelector('.message');
+    if (!box) {
+      box = document.createElement('div'); box.className = 'message'; box.setAttribute('role','alert'); box.setAttribute('aria-live','assertive');
+      document.querySelector('.welcome').after(box);
+    }
+    box.classList.toggle('message-error', !success);
+    box.innerHTML = '<span class="message-check">' + (success ? '✓' : '!') + '</span>';
+    box.append(document.createTextNode(message));
+    box.scrollIntoView({block:'nearest', behavior:'smooth'});
+  }
+  async function refreshDashboard(message, success) {
+    const scrollY = window.scrollY;
+    const response = await fetch(window.location.pathname, {headers:{'X-Requested-With':'XMLHttpRequest'}});
+    const html = await response.text();
+    const parsed = new DOMParser().parseFromString(html, 'text/html');
+    const current = document.querySelector('.app-shell');
+    const replacement = parsed.querySelector('.app-shell');
+    if (replacement && current) current.innerHTML = replacement.innerHTML;
+    window.scrollTo({top:scrollY, behavior:'auto'});
+    attachHandlers(); initChart();
+    if (message) showMessage(message, success);
+  }
+  function attachHandlers() {
+    attachValidationHandlers();
+    document.querySelectorAll('form.stack-form').forEach(form => {
+      form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const inputs = [...form.querySelectorAll('input[data-rule]')];
+        const valid = inputs.map(validate).every(Boolean);
+        if (!valid) { inputs.find(input => !validate(input))?.focus(); return; }
+        const button = form.querySelector('button[type="submit"]');
+        if (button) button.disabled = true;
+        try {
+          const response = await fetch(form.action, {method:'POST', body:new FormData(form), headers:{'X-Requested-With':'XMLHttpRequest'}});
+          const data = await response.json();
+          if (data.success) {
+            if (form.action.endsWith('/return_book') && data.late) {
+              alert('LATE RETURN FINE\n\nFine amount: ₹' + data.late_fee + '\nDue date: ' + data.due_date + '\n\nFine: ₹5 per day after the 14-day loan period.');
+            }
+            await refreshDashboard(data.message, true);
+          } else showMessage(data.message, false);
+        } catch (error) { showMessage('Could not save your changes. Check the connection and try again.', false); }
+        finally { if (button && button.isConnected) button.disabled = false; }
+      });
+    });
+    document.querySelectorAll('.delete-form').forEach(form => form.addEventListener('submit', async event => {
+      event.preventDefault();
+      if (!confirm(form.action.includes('/delete_book/') ? 'Delete this book from the catalogue? Currently issued books cannot be deleted.' : 'Remove this member? Members with currently issued books cannot be deleted.')) return;
+      try {
+        const response = await fetch(form.action, {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest'}});
+        const data = await response.json();
+        if (data.success) await refreshDashboard(data.message, true); else showMessage(data.message, false);
+      } catch (error) { showMessage('Could not remove the member. Please try again.', false); }
+    }));
+  }
+  function initChart() {
+    if (!window.Chart) return;
+    const bookCanvas = document.getElementById('bookChart');
+    if (bookCanvas) {
+      if (window.libraryChart) window.libraryChart.destroy();
+      window.libraryChart = new Chart(bookCanvas, {
+        type: 'bar',
+        data: { labels: ['Available books', 'Issued books'], datasets: [{ label: 'Books', data: [Number(bookCanvas.dataset.available), Number(bookCanvas.dataset.issued)], backgroundColor: ['#477b65', '#d5a36c'], borderRadius: 6, maxBarThickness: 76 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 450 }, plugins: { legend: { display: false }, tooltip: { enabled: true } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf0f2' } }, x: { grid: { display: false } } } }
+      });
+    }
+    const memberCanvas = document.getElementById('memberChart');
+    if (memberCanvas) {
+      if (window.libraryMemberChart) window.libraryMemberChart.destroy();
+      window.libraryMemberChart = new Chart(memberCanvas, {
+        type: 'bar',
+        data: { labels: ['Registered members'], datasets: [{ label: 'Members', data: [Number(memberCanvas.dataset.members)], backgroundColor: ['#6d8fc7'], borderRadius: 6, maxBarThickness: 76 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: { duration: 450 }, plugins: { legend: { display: false }, tooltip: { enabled: true, callbacks: { label: context => 'Members: ' + context.parsed.y } } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#edf0f2' } }, x: { grid: { display: false } } } }
+      });
+    }
+  }
+  attachHandlers(); initChart();
+})();
+</script>
+</body>
+</html>
